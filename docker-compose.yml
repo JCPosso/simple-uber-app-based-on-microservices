@@ -5,6 +5,12 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
 
   matching_worker:
     build: ./services/matching_worker
@@ -18,4 +24,5 @@ services:
       - RIDES_URL=http://host.docker.internal:8003
     command: python -u services/matching_worker/worker.py
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
