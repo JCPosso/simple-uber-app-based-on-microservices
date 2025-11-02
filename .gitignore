@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.env
+.venv
+venv/
+.envrc
+
+# SAM / build
+.aws-sam/
+dist/
+
+# vscode
+.vscode/
+
+# mac
+.DS_Store

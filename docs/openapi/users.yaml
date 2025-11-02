@@ -1,0 +1,71 @@
+openapi: 3.0.3
+info:
+  title: users-service
+  version: "1.0.0"
+paths:
+  /api/v1/users:
+    post:
+      summary: Crear usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /api/v1/users/{userId}:
+    get:
+      summary: Obtener usuario por id
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: No encontrado
+
+components:
+  schemas:
+    Location:
+      type: object
+      properties:
+        lat:
+          type: number
+        lon:
+          type: number
+        address:
+          type: string
+    UserCreate:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+    User:
+      allOf:
+        - $ref: '#/components/schemas/UserCreate'
+        - type: object
+          properties:
+            userId:
+              type: string
+            createdAt:
+              type: string
+              format: date-time

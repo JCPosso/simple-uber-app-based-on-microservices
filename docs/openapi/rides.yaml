@@ -1,0 +1,77 @@
+openapi: 3.0.3
+info:
+  title: rides-service
+  version: "1.0.0"
+paths:
+  /api/v1/rides:
+    post:
+      summary: Crear solicitud de viaje
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideCreate'
+      responses:
+        '201':
+          description: Ride creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+  /api/v1/rides/{rideId}:
+    get:
+      summary: Obtener viaje por id
+      parameters:
+        - in: path
+          name: rideId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Ride
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+        '404':
+          description: No encontrado
+
+components:
+  schemas:
+    Location:
+      type: object
+      properties:
+        lat:
+          type: number
+        lon:
+          type: number
+        address:
+          type: string
+    RideCreate:
+      type: object
+      required: [riderId, pickup, dropoff]
+      properties:
+        riderId:
+          type: string
+        pickup:
+          $ref: '#/components/schemas/Location'
+        dropoff:
+          $ref: '#/components/schemas/Location'
+        paymentMethodId:
+          type: string
+    Ride:
+      allOf:
+        - $ref: '#/components/schemas/RideCreate'
+        - type: object
+          properties:
+            rideId:
+              type: string
+            status:
+              type: string
+            estimatedFare:
+              type: number
+            requestedAt:
+              type: string
+              format: date-time

@@ -1,0 +1,53 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: rides_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  auth:
+    build: ./services/auth
+    volumes:
+      - ./services/auth:/app
+    ports:
+      - "8001:8001"
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  users:
+    build: ./services/users
+    volumes:
+      - ./services/users:/app
+    ports:
+      - "8002:8002"
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  rides:
+    build: ./services/rides
+    volumes:
+      - ./services/rides:/app
+    ports:
+      - "8003:8003"
+    environment:
+      - PYTHONUNBUFFERED=1
+
+volumes:
+  postgres_data:

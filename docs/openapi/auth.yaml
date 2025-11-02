@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: auth-service
+  version: "1.0.0"
+paths:
+  /token:
+    post:
+      summary: Obtener token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required: [username, password]
+      responses:
+        '200':
+          description: Token generado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
