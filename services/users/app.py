@@ -1,10 +1,17 @@
 from fastapi import FastAPI, HTTPException
 from uuid import uuid4
-from shared_models import UserCreate, User
 
 app = FastAPI(title="users-service")
 db: dict = {}
 
+class UserCreate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: Optional[str] = None
+
+class User(UserCreate):
+    userId: str = Field(..., alias="userId")
+    createdAt: datetime = Field(default_factory=datetime.utcnow, alias="createdAt")
 
 @app.post("/api/v1/users", status_code=201)
 async def create_user(u: UserCreate):

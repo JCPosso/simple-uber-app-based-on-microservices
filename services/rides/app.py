@@ -6,14 +6,27 @@ import os
 import asyncio
 from datetime import datetime
 import json
+from pydantic import BaseModel
+from typing import Optional
 
 try:
     import aio_pika
 except Exception:
     aio_pika = None
 
-from shared_models import Location, RideCreate
+app = FastAPI(title="rides-service")
+db: dict = {}
 
+class Location(BaseModel):
+    lat: float
+    lon: float
+    address: Optional[str] = None
+
+class RideCreate(BaseModel):
+    riderId: str
+    pickup: Location
+    dropoff: Location
+    paymentMethodId: Optional[str] = None
 
 @app.post("/api/v1/rides", status_code=201)
 async def create_ride(r: RideCreate):

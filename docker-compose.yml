@@ -1,26 +1,10 @@
 version: "3.8"
 services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
-      POSTGRES_DB: rides_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
   rabbitmq:
     image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
-
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
 
   matching_worker:
     build: ./services/matching_worker
@@ -30,9 +14,8 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/workspace
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-      - DRIVERS_URL=http://drivers:8004
-      - RIDES_URL=http://rides:8003
+      - DRIVERS_URL=http://host.docker.internal:8004
+      - RIDES_URL=http://host.docker.internal:8003
     command: python -u services/matching_worker/worker.py
-
-volumes:
-  postgres_data:
+    depends_on:
+      - rabbitmq
