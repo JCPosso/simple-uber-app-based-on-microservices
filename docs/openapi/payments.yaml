@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info:
+  title: payments-service
+  version: "1.0.0"
+paths:
+  /api/v1/payments:
+    post:
+      summary: Iniciar cobro (charge)
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rideId, amount, method]
+              properties:
+                rideId:
+                  type: string
+                amount:
+                  type: number
+                method:
+                  type: string
+      responses:
+        '201':
+          description: Pago creado / procesado
+  /api/v1/payments/{paymentId}:
+    get:
+      summary: Obtener estado del pago
+      parameters:
+        - in: path
+          name: paymentId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Detalle del pago
+  /api/v1/payments/{paymentId}/refund:
+    post:
+      summary: Solicitar reembolso
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '202':
+          description: Reembolso iniciado
+
+  /api/v1/payments/webhook:
+    post:
+      summary: Webhook de pasarela de pagos
+      description: Endpoint para recibir callbacks de la pasarela (firma en headers)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: recibido
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      schema:
+        type: string
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      schema:
+        type: string

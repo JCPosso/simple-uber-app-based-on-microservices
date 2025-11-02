@@ -6,6 +6,9 @@ paths:
   /api/v1/rides:
     post:
       summary: Crear solicitud de viaje
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         required: true
         content:
@@ -15,13 +18,17 @@ paths:
       responses:
         '201':
           description: Ride creado
+          headers:
+            Location:
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Ride'
   /api/v1/rides/{rideId}:
     get:
-      summary: Obtener viaje por id
+      summary: Obtener ride por id
       parameters:
         - in: path
           name: rideId
@@ -37,8 +44,110 @@ paths:
                 $ref: '#/components/schemas/Ride'
         '404':
           description: No encontrado
+    put:
+      summary: Actualizar ride (reemplazo limitado)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ride'
+      responses:
+        '200':
+          description: Ride actualizado
+    patch:
+      summary: Actualización parcial del ride
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Ride actualizado parcialmente
+
+  /api/v1/rides/{rideId}/cancel:
+    post:
+      summary: Cancelar ride
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Ride cancelado
+
+  /api/v1/rides/{rideId}/accept:
+    post:
+      summary: Driver acepta un ride
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                driverId:
+                  type: string
+      responses:
+        '200':
+          description: Ride aceptado
+        '409':
+          description: Conflict (already accepted)
+
+  /api/v1/rides/{rideId}/start:
+    post:
+      summary: Marcar inicio de ride
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Ride iniciado
+
+  /api/v1/rides/{rideId}/complete:
+    post:
+      summary: Completar ride y generar charge
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Ride completado; payment solicitado
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      schema:
+        type: string
+      required: false
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      schema:
+        type: string
+      required: false
+
   schemas:
     Location:
       type: object
@@ -67,6 +176,8 @@ components:
         - type: object
           properties:
             rideId:
+              type: string
+            driverId:
               type: string
             status:
               type: string

@@ -1,0 +1,145 @@
+openapi: 3.0.3
+info:
+  title: drivers-service
+  version: "1.0.0"
+paths:
+  /api/v1/drivers:
+    post:
+      summary: Registrar conductor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverCreate'
+      responses:
+        '201':
+          description: Conductor creado
+    get:
+      summary: Buscar/conductores (por status / proximity)
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: near
+          description: lat,lon
+          schema:
+            type: string
+        - in: query
+          name: radius
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Lista de drivers
+  /api/v1/drivers/{driverId}:
+    get:
+      summary: Obtener datos del conductor
+      parameters:
+        - in: path
+          name: driverId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Driver
+    put:
+      summary: Reemplazar/actualizar conductor
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Driver'
+      responses:
+        '200':
+          description: Driver actualizado
+    patch:
+      summary: Actualización parcial del conductor
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Driver actualizado parcialmente
+
+  /api/v1/drivers/{driverId}/status:
+    patch:
+      summary: Cambiar status del conductor
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [OFFLINE, AVAILABLE, ON_TRIP]
+      responses:
+        '200':
+          description: Status actualizado
+
+  /api/v1/drivers/{driverId}/location:
+    post:
+      summary: Actualizar ubicación rápida (fast path)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Location'
+      responses:
+        '200':
+          description: Ubicación actualizada
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Location:
+      type: object
+      properties:
+        lat:
+          type: number
+        lon:
+          type: number
+        address:
+          type: string
+    DriverCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        carModel:
+          type: string
+        phone:
+          type: string
+    Driver:
+      allOf:
+        - $ref: '#/components/schemas/DriverCreate'
+        - type: object
+          properties:
+            driverId:
+              type: string
+            status:
+              type: string

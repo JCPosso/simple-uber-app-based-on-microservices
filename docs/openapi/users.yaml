@@ -5,7 +5,7 @@ info:
 paths:
   /api/v1/users:
     post:
-      summary: Crear usuario
+      summary: Crear usuario (registro)
       requestBody:
         required: true
         content:
@@ -15,6 +15,11 @@ paths:
       responses:
         '201':
           description: Usuario creado
+          headers:
+            Location:
+              description: URI del recurso creado
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -37,8 +42,46 @@ paths:
                 $ref: '#/components/schemas/User'
         '404':
           description: No encontrado
+    put:
+      summary: Reemplazar/actualizar perfil del usuario
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '200':
+          description: Usuario actualizado
+    patch:
+      summary: Actualización parcial del usuario
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Usuario actualizado parcialmente
+    delete:
+      summary: Eliminar usuario (soft-delete)
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Usuario eliminado (soft)
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     Location:
       type: object
@@ -59,6 +102,8 @@ components:
           type: string
         phone:
           type: string
+        password:
+          type: string
     User:
       allOf:
         - $ref: '#/components/schemas/UserCreate'
@@ -69,3 +114,10 @@ components:
             createdAt:
               type: string
               format: date-time
+  parameters:
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      schema:
+        type: string
+      required: false
