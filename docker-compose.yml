@@ -25,29 +25,35 @@ services:
   auth:
     build: ./services/auth
     volumes:
-      - ./services/auth:/app
+      - ./:/workspace
     ports:
       - "8001:8001"
     environment:
       - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/workspace
+    command: uvicorn services.auth.app:app --host 0.0.0.0 --port 8001
 
   users:
     build: ./services/users
     volumes:
-      - ./services/users:/app
+      - ./:/workspace
     ports:
       - "8002:8002"
     environment:
       - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/workspace
+    command: uvicorn services.users.app:app --host 0.0.0.0 --port 8002
 
   rides:
     build: ./services/rides
     volumes:
-      - ./services/rides:/app
+      - ./:/workspace
     ports:
       - "8003:8003"
     environment:
       - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/workspace
+    command: uvicorn services.rides.app:app --host 0.0.0.0 --port 8003
 
 volumes:
   postgres_data:

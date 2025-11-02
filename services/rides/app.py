@@ -1,5 +1,4 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 from uuid import uuid4
 import os
 import asyncio
@@ -9,22 +8,13 @@ try:
 except Exception:
     aio_pika = None
 
+from shared_models import Location, RideCreate
+
 app = FastAPI(title="rides-service")
 db: dict = {}
 
 
-class Location(BaseModel):
-    lat: float
-    lon: float
-
-
-class RideCreate(BaseModel):
-    riderId: str
-    pickup: Location
-    dropoff: Location
-
-
-@app.post("/api/v1/rides")
+@app.post("/api/v1/rides", status_code=201)
 async def create_ride(r: RideCreate):
     ride_id = str(uuid4())
     ride = {

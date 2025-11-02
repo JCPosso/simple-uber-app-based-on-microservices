@@ -1,23 +1,17 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 from uuid import uuid4
+from shared_models import UserCreate, User
 
 app = FastAPI(title="users-service")
 db: dict = {}
 
 
-class UserCreate(BaseModel):
-    name: str
-    email: str
-    phone: str | None = None
-
-
-@app.post("/api/v1/users")
+@app.post("/api/v1/users", status_code=201)
 async def create_user(u: UserCreate):
     user_id = str(uuid4())
-    user = {"userId": user_id, "name": u.name, "email": u.email, "phone": u.phone}
-    db[user_id] = user
-    return user
+    user = User(userId=user_id, name=u.name, email=u.email, phone=u.phone)
+    db[user_id] = user.dict(by_alias=True)
+    return db[user_id]
 
 
 @app.get("/api/v1/users/{user_id}")
