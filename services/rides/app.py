@@ -1,7 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from uuid import uuid4
+from fastapi import FastAPI, HTTPException
+from uuid import uuid4
 import os
 import asyncio
+from datetime import datetime
+import json
 
 try:
     import aio_pika
@@ -9,9 +13,6 @@ except Exception:
     aio_pika = None
 
 from shared_models import Location, RideCreate
-
-app = FastAPI(title="rides-service")
-db: dict = {}
 
 
 @app.post("/api/v1/rides", status_code=201)
@@ -27,20 +28,56 @@ async def create_ride(r: RideCreate):
     db[ride_id] = ride
     rmq = os.getenv("RABBITMQ_URL")
     if rmq and aio_pika:
+        # publish in background, don't block request
         asyncio.create_task(publish_ride_requested(rmq, ride))
     return ride
 
 
 async def publish_ride_requested(rabbit_url, ride):
+    """Publica un evento `ride.requested` al exchange `ride_events` con metadata.
+
+    Mensaje JSON con campos: type, rideId, riderId, pickup, dropoff, metadata
+    """
     try:
         conn = await aio_pika.connect_robust(rabbit_url)
         channel = await conn.channel()
-        await channel.default_exchange.publish(
-            aio_pika.Message(body=str(ride).encode()), routing_key="ride.requested"
-        )
+        exchange = await channel.declare_exchange("ride_events", aio_pika.ExchangeType.TOPIC, durable=True)
+
+        payload = {
+            "type": "ride.requested",
+            "rideId": ride.get("rideId"),
+            "riderId": ride.get("riderId"),
+            "pickup": ride.get("pickup"),
+            "dropoff": ride.get("dropoff"),
+            "metadata": {
+                "correlation_id": str(uuid4()),
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+            },
+        }
+
+        msg = aio_pika.Message(body=json.dumps(payload).encode(), delivery_mode=aio_pika.DeliveryMode.PERSISTENT)
+        await exchange.publish(msg, routing_key="ride.requested")
         await conn.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        # minimal logging to stdout (uvicorn will capture)
+        print("[rides] publish_ride_requested error:", exc)
+
+
+@app.patch("/api/v1/rides/{ride_id}/assign")
+async def assign_driver(ride_id: str, body: dict):
+    """Endpoint para que el matching worker asigne un driver.
+
+    body: { "driverId": "..." }
+    """
+    ride = db.get(ride_id)
+    if not ride:
+        raise HTTPException(status_code=404, detail="ride not found")
+    driver_id = body.get("driverId")
+    if not driver_id:
+        raise HTTPException(status_code=400, detail="driverId required")
+    ride["driverId"] = driver_id
+    ride["status"] = "MATCHED"
+    return ride
 
 
 @app.get("/api/v1/rides/{ride_id}")

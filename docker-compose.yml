@@ -22,38 +22,17 @@ services:
     ports:
       - "6379:6379"
 
-  auth:
-    build: ./services/auth
+  matching_worker:
+    build: ./services/matching_worker
     volumes:
       - ./:/workspace
-    ports:
-      - "8001:8001"
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/workspace
-    command: uvicorn services.auth.app:app --host 0.0.0.0 --port 8001
-
-  users:
-    build: ./services/users
-    volumes:
-      - ./:/workspace
-    ports:
-      - "8002:8002"
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/workspace
-    command: uvicorn services.users.app:app --host 0.0.0.0 --port 8002
-
-  rides:
-    build: ./services/rides
-    volumes:
-      - ./:/workspace
-    ports:
-      - "8003:8003"
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/workspace
-    command: uvicorn services.rides.app:app --host 0.0.0.0 --port 8003
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - DRIVERS_URL=http://drivers:8004
+      - RIDES_URL=http://rides:8003
+    command: python -u services/matching_worker/worker.py
 
 volumes:
   postgres_data:

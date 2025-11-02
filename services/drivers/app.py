@@ -30,6 +30,16 @@ async def get_driver(driver_id: str):
     return driver
 
 
+@app.get("/api/v1/drivers/available")
+async def get_available_driver():
+    """Return the first driver with status AVAILABLE or 204 if none."""
+    for d in db.values():
+        if d.get("status") == "AVAILABLE":
+            return d
+    # No driver available
+    raise HTTPException(status_code=204, detail="no drivers available")
+
+
 @app.patch("/api/v1/drivers/{driver_id}/status")
 async def patch_status(driver_id: str, body: dict):
     driver = db.get(driver_id)
