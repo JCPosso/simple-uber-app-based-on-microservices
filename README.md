@@ -1,11 +1,11 @@
-# 🚗 Ride-Sharing Platform – Microservice Architecture (AWS Cloud Prototype)
+# Ride-Sharing Platform – Microservice Architecture (AWS Cloud Prototype)
 
-## 🧭 Resumen
+## Resumen
 Proyecto que diseña e implementa una plataforma de ride-sharing basada en microservicios (inspirada en sistemas tipo Uber). Demuestra cómo una arquitectura distribuida gestiona usuarios, conductores, viajes y pagos, priorizando escalabilidad, modularidad e interacción en tiempo real. Implementado en Python y desplegado en AWS (Lambda, API Gateway).
 
 ---
 
-## 🧩 1. Modelado de Dominio
+## Modelado de Dominio
 
 Los modelos del dominio son implementados como Pydantic.
 Entidades principales:
@@ -18,7 +18,15 @@ Entidades principales:
 Estados típicos de un ride: REQUESTED → MATCHED → ACCEPTED → STARTED → COMPLETED → PAID
 
 
-## 🌐 3. URIs de Recursos (Endpoints REST)
+## Metáfora de Diseño
+- User Service = Recepción
+- Driver Service = Centro de operaciones
+- Ride Service = Despacho
+- Payment Service = Facturación
+
+Cada servicio con responsabilidad clara para modularidad y escalado.
+
+##  URIs de Recursos (Endpoints REST)
 
 | Recurso | Método | URI | Descripción |
 |---|---:|---|---|
@@ -37,7 +45,7 @@ Todos los endpoints siguen principios REST y devuelven JSON.
 
 ---
 
-## 💬 4. Representación de Recursos (JSON)
+## Representación de Recursos (JSON)
 
 Ejemplo Ride:
 ```json
@@ -59,18 +67,18 @@ Ejemplo error:
   "message": "Missing riderId field"
 }
 ```
+---
+
+## Arquitectura
+
+- API Gateway: entrada REST
+- AWS Lambda (Python 3.9): lógica de negocio
+- EC2: motor de matching
+- RABBITMQ: mensajería asíncrona
 
 ---
 
-## ⚙️ 5. Mapeo Métodos HTTP
-- Crear ride: POST /api/v1/rides
-- Obtener ride: GET /api/v1/rides/{id}
-- Actualizar driver status: PUT /api/v1/drivers/{id}/status
-- Eliminar user (admin): DELETE /api/v1/users/{id}
-
----
-
-## 🧠 6. Microservicios (Resumen)
+## Microservicios
 
 | Servicio | Responsabilidad | Componentes AWS |
 |---|---:|---|
@@ -82,64 +90,9 @@ Ejemplo error:
 
 ---
 
-## ☁️ 7. Arquitectura en la Nube (AWS)
+## Desarrollo local
 
-- API Gateway: entrada REST
-- AWS Lambda (Python 3.9): lógica de negocio
-- EC2: motor de matching
-- RABBITMQ: mensajería asíncrona
-- CloudWatch: logs y métricas
-- IAM: control de acceso con mínimos privilegios
-
----
-
-## 📡 8. Comunicación en Tiempo Real
-Opciones:
-1. API Gateway WebSocket + Lambda (push a clientes)
-2. Polling periódico de /drivers/{id}/location
----
-
-## 🔒 9. Seguridad
-- Autenticación: JWT o AWS Cognito
-- HTTPS obligatorio en API Gateway
-- IAM roles con least privilege
-- Validación de inputs en todas las APIs
-
----
-
-## 🧪 10. Pruebas y Validación
-
-Local:
-```bash
-sam local start-api
-curl http://127.0.0.1:3000/api/v1/rides -X POST -d '{"riderId":"user-1"}' -H "Content-Type: application/json"
-```
-
-Pruebas en AWS (ejemplo):
-```bash
-curl -X POST https://{api-id}.execute-api.{region}.amazonaws.com/dev/api/v1/rides \
-  -H "Content-Type: application/json" \
-  -d '{"riderId":"user-101","pickupLocation":"Main St"}'
-```
-
-## 🧱 14. Metáfora de Diseño
-- User Service = Recepción
-- Driver Service = Centro de operaciones
-- Ride Service = Despacho
-- Payment Service = Facturación
-
-Cada servicio con responsabilidad clara para modularidad y escalado.
-
----
-
-## 🏁 15. Pasos de Despliegue (resumen)
-1. Crear Lambdas (Runtime: Python 3.9, handler: app.handler).  
-2. Subir app.py por servicio.  
-3. Crear API Gateway y mapear endpoints a Lambdas.  
-4. Desplegar y probar.  
-5. Usar tablas DynamoDB y revisar CloudWatch.
-
-## 🧪 Desarrollo local (estado actual)
+La implementación contempla tres microservicios desarrollados con el framework FastAPI (Python). Para empaquetar cada servicio se usa virtualenv para crear entornos aislados.
 
 El `docker-compose.yml` del repositorio actualmente ejecuta la infraestructura mínima (RabbitMQ) y el `matching_worker` (consumer). Las APIs (`auth`, `users`, `drivers`, `rides`, `payments`) están pensadas para desplegarse como Lambdas; sus Dockerfiles locales fueron deshabilitados para evitar builds accidentales.
 
@@ -155,13 +108,46 @@ docker compose up --build -d matching_worker
 
 2) Ejecutar las APIs localmente con `uvicorn` cuando necesites probarlas en tu máquina (ejemplo para `rides`):
 
+
+Instalación:
+https://virtualenv.pypa.io/en/latest/installation.html
+
+Ejemplo en Debian/Ubuntu:
 ```bash
+sudo apt install python3-virtualenv
+```
+
+Ingresamos a la carpeta del servicio y se crea el entorno virtual:
+```bash
+# Entrar en la carpeta del servicio
+cd src/services/<service-name>
+
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r services/rides/requirements.txt
+```
+Instalar requisitos del entorno:
+```bash
+pip install -r requirements.txt
+```
 
-# Si RabbitMQ corre en Docker y tu API en macOS, usa host.docker.internal
-export RABBITMQ_URL="amqp://guest:guest@host.docker.internal:5672/"
+o hacer Instalación directa de paquetes clave:
+```bash
+pip install fastapi
+pip install "uvicorn[standard]"
+pip install mangum
+```
+### Dependencias
+Notas:
+- Uvicorn es el servidor ASGI recomendado para ejecutar FastAPI en desarrollo y pruebas.
+- Mangum permite adaptar las llamadas de API Gateway a aplicaciones ASGI para desplegar FastAPI en AWS Lambda.
+
+En algunos sistemas puede ser necesario instalar uvicorn globalmente:
+```bash
+sudo apt install uvicorn
+```
+Si RabbitMQ corre en Docker
+```bash
+export RABBITMQ_URL="amqp://guest:guest@localhost:5672/"
 PYTHONPATH=$(pwd) uvicorn services.rides.app:app --host 0.0.0.0 --port 8003 --reload
 ```
 
@@ -181,21 +167,19 @@ docker compose logs -f matching_worker
 
 Notas:
 - Si ejecutas APIs localmente y el worker en Docker, configura `DRIVERS_URL` y `RIDES_URL` del worker para usar `host.docker.internal` (o publica los puertos de las APIs) para que el worker pueda invocarlas.
-- `shared_models.py` es la fuente de verdad para los modelos; empaqueta esto como Lambda Layer o inclúyelo en cada paquete de Lambda en tu pipeline de despliegue.
 
-Tareas posteriores recomendadas:
-- Implementar persistencia (Postgres o DynamoDB) y migraciones.
-- Añadir autenticación JWT en `auth` y proteger endpoints.
-- Añadir tests unitarios y de contrato CI.
+## Depliegue en Lambda AWS
 
-### 📚 Diagramas y OpenAPI
+- Empaquetar el contenido de los servicios junto con el código del servicio.
+- Usar Mangum como handler en la aplicación para recibir eventos de API Gateway.
+
+### Diagramas y OpenAPI
 
 La documentación OpenAPI mínima para los servicios está en `docs/openapi/`.
 El modelado del dominio se mantiene en código (principalmente en `shared_models.py`) y en las definiciones Pydantic dentro de cada servicio.
 
 Usa las especificaciones en `docs/openapi/*.yaml` para generar stubs, documentación interactiva (Swagger/Redoc) o pruebas de contrato.
 
-Ejemplo rápido para visualizar una spec localmente con `redoc-cli` (opcional):
 
 ```bash
 # instalar redoc-cli si no está: npm i -g redoc-cli
@@ -204,7 +188,7 @@ redoc-cli serve docs/openapi/rides.yaml
 
 ---
 
-## 🧾 16. Referencias & Autor
+## Referencias & Autor
 - REST API Tutorial
 - AWS Lambda Developer Guide
 - Autor: JCPosso ( AYGO - AWS Academy Learner Lab – 2025)
