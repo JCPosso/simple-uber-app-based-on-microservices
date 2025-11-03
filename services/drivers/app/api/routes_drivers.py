@@ -7,7 +7,7 @@ from ..models.driver import DriverCreate, Location
 router = APIRouter(prefix="/api/v1/drivers", tags=["drivers"])
 db = {}
 
-@router.get("/")
+@router.get("")
 async def list_drivers(status: Optional[str] = None):
     """List all drivers, optionally filtering by status."""
     allowed = ("OFFLINE", "AVAILABLE", "ON_TRIP")
@@ -18,7 +18,7 @@ async def list_drivers(status: Optional[str] = None):
       drivers = [d for d in drivers if d.get("status") == status]
     return drivers
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 async def create_driver(d: DriverCreate):
     driver_id = str(uuid4())
     driver = {"driverId": driver_id, "name": d.name, "carModel": d.carModel, "phone": d.phone, "status": "OFFLINE"}
