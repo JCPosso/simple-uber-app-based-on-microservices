@@ -12,6 +12,11 @@ class PaymentRequest(BaseModel):
     amount: float
     method: str
 
+@app.get("/api/v1/payments")
+async def list_payments(rideId: Optional[str] = None):
+  if rideId:
+    return [p for p in db.values() if p.get("rideId") == rideId]
+  return list(db.values())
 
 @app.post("/api/v1/payments", status_code=201)
 async def create_payment(p: PaymentRequest):
@@ -39,11 +44,13 @@ async def refund(payment_id: str, body: Optional[dict] = None):
     return {"ok": True}
 
 
-@app.post("/api/v1/payments/webhook")
-async def webhook(body: dict):
-    # placeholder for gateway callbacks
-    return {"received": True}
-
+@app.post("/api/v1/payments/{payment_id}/state")
+async def update_payment_state(payment_id: str, body: dict):
+    pay = db.get(payment_id)
+    if not pay:
+        raise HTTPException(status_code=404, detail="payment not found")
+    pay["status"] = body.get("status", pay["status"])
+    return {"ok": True}
 
 @app.get("/health")
 async def health():

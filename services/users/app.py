@@ -13,6 +13,10 @@ class User(UserCreate):
     userId: str = Field(..., alias="userId")
     createdAt: datetime = Field(default_factory=datetime.utcnow, alias="createdAt")
 
+@app.get("/api/v1/users")
+async def list_users():
+    return list(db.values())
+
 @app.post("/api/v1/users", status_code=201)
 async def create_user(u: UserCreate):
     user_id = str(uuid4())

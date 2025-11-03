@@ -28,6 +28,11 @@ class RideCreate(BaseModel):
     dropoff: Location
     paymentMethodId: Optional[str] = None
 
+@app.get("/api/v1/rides")
+async def list_rides():
+    """Return all rides as a list."""
+    return list(db.values())
+
 @app.post("/api/v1/rides", status_code=201)
 async def create_ride(r: RideCreate):
     ride_id = str(uuid4())
@@ -72,7 +77,6 @@ async def publish_ride_requested(rabbit_url, ride):
         await exchange.publish(msg, routing_key="ride.requested")
         await conn.close()
     except Exception as exc:
-        # minimal logging to stdout (uvicorn will capture)
         print("[rides] publish_ride_requested error:", exc)
 
 
