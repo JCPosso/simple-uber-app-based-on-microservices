@@ -1,23 +1,13 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from uuid import uuid4
 from typing import Optional
+from ..models.driver import DriverCreate, Location
 
-app = FastAPI(title="drivers-service")
-db: dict = {}
+router = APIRouter(prefix="/api/v1/drivers", tags=["drivers"])
+db = {}
 
-
-class DriverCreate(BaseModel):
-    name: str
-    carModel: Optional[str] = None
-    phone: Optional[str] = None
-
-class Location(BaseModel):
-    lat: float
-    lon: float
-    address: Optional[str] = None
-
-@app.get("/api/v1/drivers")
+@router.get("/")
 async def list_drivers(status: Optional[str] = None):
     """List all drivers, optionally filtering by status."""
     allowed = ("OFFLINE", "AVAILABLE", "ON_TRIP")
@@ -28,7 +18,7 @@ async def list_drivers(status: Optional[str] = None):
       drivers = [d for d in drivers if d.get("status") == status]
     return drivers
 
-@app.post("/api/v1/drivers", status_code=201)
+@router.post("/", status_code=201)
 async def create_driver(d: DriverCreate):
     driver_id = str(uuid4())
     driver = {"driverId": driver_id, "name": d.name, "carModel": d.carModel, "phone": d.phone, "status": "OFFLINE"}
@@ -36,7 +26,7 @@ async def create_driver(d: DriverCreate):
     return driver
 
 
-@app.get("/api/v1/drivers/available")
+@router.get("/available")
 async def get_available_driver():
     """Return the first driver with status AVAILABLE or 204 if none."""
     for d in db.values():
@@ -45,14 +35,14 @@ async def get_available_driver():
     # No driver available
     raise HTTPException(status_code=204, detail="no drivers available")
 
-@app.get("/api/v1/drivers/{driver_id}")
+@router.get("/{driver_id}")
 async def get_driver(driver_id: str):
     driver = db.get(driver_id)
     if not driver:
         raise HTTPException(status_code=404, detail="driver not found")
     return driver
 
-@app.patch("/api/v1/drivers/{driver_id}/status")
+@router.patch("/{driver_id}/status")
 async def patch_status(driver_id: str, body: dict):
     driver = db.get(driver_id)
     if not driver:
@@ -64,7 +54,7 @@ async def patch_status(driver_id: str, body: dict):
     return driver
 
 
-@app.post("/api/v1/drivers/{driver_id}/location")
+@router.post("/{driver_id}/location")
 async def update_location(driver_id: str, loc: Location):
     driver = db.get(driver_id)
     if not driver:
@@ -72,6 +62,6 @@ async def update_location(driver_id: str, loc: Location):
     driver["location"] = loc.dict()
     return {"ok": True}
 
-@app.get("/health")
-async def health():
+@router.get("/health")
+def health_check():
     return {"status": "ok"}
