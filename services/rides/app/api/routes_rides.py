@@ -8,32 +8,23 @@ from datetime import datetime
 import json
 from pydantic import BaseModel
 from typing import Optional
+from ..models.ride import RideCreate, Location
+
+router = APIRouter(prefix="/api/v1/rides", tags=["rides"])
+db = {}
+
 
 try:
     import aio_pika
 except Exception:
     aio_pika = None
 
-app = FastAPI(title="rides-service")
-db: dict = {}
-
-class Location(BaseModel):
-    lat: float
-    lon: float
-    address: Optional[str] = None
-
-class RideCreate(BaseModel):
-    riderId: str
-    pickup: Location
-    dropoff: Location
-    paymentMethodId: Optional[str] = None
-
-@app.get("/api/v1/rides")
+@router.get("")
 async def list_rides():
     """Return all rides as a list."""
     return list(db.values())
 
-@app.post("/api/v1/rides", status_code=201)
+@router.post("", status_code=201)
 async def create_ride(r: RideCreate):
     ride_id = str(uuid4())
     ride = {
@@ -79,8 +70,7 @@ async def publish_ride_requested(rabbit_url, ride):
     except Exception as exc:
         print("[rides] publish_ride_requested error:", exc)
 
-
-@app.patch("/api/v1/rides/{ride_id}/assign")
+@router.patch("/{ride_id}/assign")
 async def assign_driver(ride_id: str, body: dict):
     """Endpoint para que el matching worker asigne un driver.
 
@@ -97,7 +87,7 @@ async def assign_driver(ride_id: str, body: dict):
     return ride
 
 
-@app.get("/api/v1/rides/{ride_id}")
+@router.get("/{ride_id}")
 async def get_ride(ride_id: str):
     ride = db.get(ride_id)
     if not ride:
@@ -105,6 +95,6 @@ async def get_ride(ride_id: str):
     return ride
 
 
-@app.get("/health")
+@router.get("/health")
 async def health():
     return {"status": "ok"}
