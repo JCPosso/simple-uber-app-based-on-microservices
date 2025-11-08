@@ -213,7 +213,7 @@ rm -rf lambda-package
 ![deploy_api.png](img/deploy_api.png)
 ### EC2
 1. Ingresamos a una EC2 previamente creada
-![lambda.png](img/lambda.png)
+![ec2.png](img/ec2.png)
 2. Luego, vamos a necesitar desargar las imagenes docker. Para ello, ejecutamos los siguientes comandos:
 RabbitMQ:
 ```bash
@@ -237,6 +237,8 @@ docker run -d --name matching_worker \
   -e RIDES_URL=https://swgyv053e7.execute-api.us-east-1.amazonaws.com/dev/rides-api\
   juancamiloposso/matching_worker:latest
 ```
+![ec2_build_container.png](img/ec2_build_container.png)
+![ec2_docker_ps.png](img/ec2_docker_ps.png)
 ### Configurando reglas seguridad y VPC
 1. nos digirimos al servicio VPC de AWS, y vamos a la seccion security groups
 ![view_security_groups.png](img/view_security_groups.png)
@@ -252,21 +254,19 @@ docker run -d --name matching_worker \
 ![inbound_rules.png](img/inbound_rules.png)
 
 ### Pruebas Endpoints
+![drivers1.png](img/drivers1.png)
+![drivers2.png](img/drivers2.png)
+![rides1.png](img/rides2.png)
+![rides1.png](img/rides2.png)
+
+### Respuesta worker EC2 y conexion con RabbitMQ
+![matching_worker_rabbit_connection.png](img/matching_worker_rabbit_connection.png)
+![final_evidence_worker.png](img/final_evidence_worker.png)
 
 ### Diagramas y OpenAPI
 
 La documentación OpenAPI mínima para los servicios está en `docs/openapi/`.
-El modelado del dominio se mantiene en código (principalmente en `shared_models.py`) y en las definiciones Pydantic dentro de cada servicio.
-
-Usa las especificaciones en `docs/openapi/*.yaml` para generar stubs, documentación interactiva (Swagger/Redoc) o pruebas de contrato.
-
-
-```bash
-# instalar redoc-cli si no está: npm i -g redoc-cli
-redoc-cli serve docs/openapi/rides.yaml
-```
-
----
+El modelado del dominio se mantiene en las definiciones Pydantic dentro de cada servicio.
 
 ## Referencias & Autor
 - REST API Tutorial
