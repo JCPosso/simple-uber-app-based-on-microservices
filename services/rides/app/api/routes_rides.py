@@ -32,10 +32,14 @@ async def create_ride(r: RideCreate):
         "status": "REQUESTED",
     }
     db[ride_id] = ride
+
     rmq = os.getenv("RABBITMQ_URL")
     if rmq and aio_pika:
-        # publish in background, don't block request
-        asyncio.create_task(publish_ride_requested(rmq, ride))
+        try:
+            await publish_ride_requested(rmq, ride)
+        except Exception as e:
+            print(f"[ERROR] Failed to publish ride_requested: {e}")
+
     return ride
 
 
@@ -48,7 +52,6 @@ async def publish_ride_requested(rabbit_url, ride):
         conn = await aio_pika.connect_robust(rabbit_url)
         channel = await conn.channel()
         exchange = await channel.declare_exchange("ride_events", aio_pika.ExchangeType.TOPIC, durable=True)
-
         payload = {
             "type": "ride.requested",
             "rideId": ride.get("rideId"),
@@ -60,12 +63,27 @@ async def publish_ride_requested(rabbit_url, ride):
                 "timestamp": datetime.utcnow().isoformat() + "Z",
             },
         }
-
         msg = aio_pika.Message(body=json.dumps(payload).encode(), delivery_mode=aio_pika.DeliveryMode.PERSISTENT)
         await exchange.publish(msg, routing_key="ride.requested")
         await conn.close()
     except Exception as exc:
         print("[rides] publish_ride_requested error:", exc)
+
+@router.patch("/{ride_id}/assign")
+async def assign_driver(ride_id: str, body: dict):
+    """Endpoint para que el matching worker asigne un driver.
+
+    body: { "driverId": "..." }
+    """
+    ride = db.get(ride_id)
+    if not ride:
+        raise HTTPException(status_code=404, detail="ride not found")
+    driver_id = body.get("driverId")
+    if not driver_id:
+        raise HTTPException(status_code=400, detail="driverId required")
+    ride["driverId"] = driver_id
+    ride["status"] = "MATCHED"
+    return ride
 
 @router.get("/{ride_id}")
 async def get_ride(ride_id: str):

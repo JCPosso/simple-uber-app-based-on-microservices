@@ -3,4 +3,4 @@ WORKDIR /workspace
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . /workspace
-CMD ["python", "-u", "services/matching_worker/worker.py"]
+CMD ["python", "-u", "worker.py"]
