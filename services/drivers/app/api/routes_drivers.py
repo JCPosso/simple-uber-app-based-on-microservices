@@ -7,10 +7,6 @@ from ..models.driver import DriverCreate, Location
 router = APIRouter(prefix="/drivers", tags=["drivers"])
 db = {}
 
-@router.get("/health")
-def health_check():
-    return {"status": "ok"}
-
 @router.get("/available")
 async def get_available_driver():
     """Return the first driver with status AVAILABLE or 204 if none."""

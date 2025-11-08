@@ -1,6 +1,4 @@
-from fastapi import FastAPI, HTTPException
-from uuid import uuid4
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from uuid import uuid4
 import os
 import asyncio
@@ -10,9 +8,8 @@ from pydantic import BaseModel
 from typing import Optional
 from ..models.ride import RideCreate, Location
 
-router = APIRouter(prefix="/api/v1/rides", tags=["rides"])
+router = APIRouter(prefix="/rides", tags=["rides"])
 db = {}
-
 
 try:
     import aio_pika
@@ -70,31 +67,9 @@ async def publish_ride_requested(rabbit_url, ride):
     except Exception as exc:
         print("[rides] publish_ride_requested error:", exc)
 
-@router.patch("/{ride_id}/assign")
-async def assign_driver(ride_id: str, body: dict):
-    """Endpoint para que el matching worker asigne un driver.
-
-    body: { "driverId": "..." }
-    """
-    ride = db.get(ride_id)
-    if not ride:
-        raise HTTPException(status_code=404, detail="ride not found")
-    driver_id = body.get("driverId")
-    if not driver_id:
-        raise HTTPException(status_code=400, detail="driverId required")
-    ride["driverId"] = driver_id
-    ride["status"] = "MATCHED"
-    return ride
-
-
 @router.get("/{ride_id}")
 async def get_ride(ride_id: str):
     ride = db.get(ride_id)
     if not ride:
         raise HTTPException(status_code=404, detail="ride not found")
     return ride
-
-
-@router.get("/health")
-async def health():
-    return {"status": "ok"}
