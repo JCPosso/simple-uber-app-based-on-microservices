@@ -192,7 +192,7 @@ rm -rf lambda-package
 ```
 ### Cargar zip a aws Lambda
 1. creamos 4 funciones lambda de la siguiente manera
-![create_lambda.png](img/create_lambda.png)
+![new_lambda.png](img/new_lambda.png)
 2. Seleccionamos cargar archivo .zip
 ![ip_file_lambda.png](img/zip_file_lambda.png)
 3. Generamos la lambda y en la sección de código seleccionamos configurar tiempo de ejecución y editamos
@@ -204,7 +204,7 @@ rm -rf lambda-package
 ![create_rest_api.png](img/create_rest_api.png)
 2. Creamos los 4 recursos siguiendo el nombre de ruta puesto en los archivos main.py de cada servicio
 - Por cada endpoint creamos tipode método ANY, Funcion Lambda, seleccionamos integracion proxy de lambda, seleccionamos la lambda correspondiente al servicio y le damos en guardar.
-![create_rest_api.png](img/create_rest_api.png)
+![create_lambda.png](img/create_lambda.png)
 4. Después para cada Recurso creamos un recurso de tipo proxy con la misma configuracion anterior.
 ![create_proxy_resource.png](img/create_proxy_resource.png)
 5. Finalmente, debemos tener los servicios similar a lo siguiente:
