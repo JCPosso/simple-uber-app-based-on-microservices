@@ -34,16 +34,6 @@ async def get_payment(payment_id: str):
         raise HTTPException(status_code=404, detail="payment not found")
     return pay
 
-
-@app.post("/api/v1/payments/{payment_id}/refund")
-async def refund(payment_id: str, body: Optional[dict] = None):
-    pay = db.get(payment_id)
-    if not pay:
-        raise HTTPException(status_code=404, detail="payment not found")
-    pay["status"] = "REFUND_REQUESTED"
-    return {"ok": True}
-
-
 @app.post("/api/v1/payments/{payment_id}/state")
 async def update_payment_state(payment_id: str, body: dict):
     pay = db.get(payment_id)
@@ -51,7 +41,3 @@ async def update_payment_state(payment_id: str, body: dict):
         raise HTTPException(status_code=404, detail="payment not found")
     pay["status"] = body.get("status", pay["status"])
     return {"ok": True}
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}

@@ -31,8 +31,3 @@ async def get_user(user_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="user not found")
     return user
-
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}

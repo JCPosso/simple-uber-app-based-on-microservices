@@ -17,6 +17,9 @@ Entidades principales:
 
 Estados típicos de un ride: REQUESTED → MATCHED → ACCEPTED → STARTED → COMPLETED → PAID
 
+<p align="center">
+  <img src="img/design.png" />
+</p>
 
 ## Metáfora de Diseño
 - User Service = Recepción
@@ -32,53 +35,37 @@ Cada servicio con responsabilidad clara para modularidad y escalado.
 |---|---:|---|---|
 | Users | POST | /api/v1/users | Crear usuario |
 | Users | GET | /api/v1/users/{id} | Obtener usuario |
+| Users | GET | /api/v1/users | Obtener usuarios |
 | Drivers | POST | /api/v1/drivers | Registrar conductor |
+| Drivers | POST | /api/v1/drivers/{id}/location | Actualizar ubicacion conductor |
+| Drivers | GET | /api/v1/drivers | Obtener conductores |
+| Drivers | GET | /api/v1/drivers/available | Conductores Disponibles |
 | Drivers | PUT | /api/v1/drivers/{id}/status | Actualizar disponibilidad |
 | Drivers | GET | /api/v1/drivers/{id} | Obtener detalles conductor |
 | Rides | POST | /api/v1/rides | Solicitar viaje |
+| Rides | GET | /api/v1/rides | Listar viajes |
+| Rides | PATCH | /api/v1/rides/{id}/assign | Asignar viaje |
 | Rides | GET | /api/v1/rides/{id} | Obtener detalle de viaje |
-| Rides | PUT | /api/v1/rides/{id}/status | Actualizar estado de viaje |
 | Payments | POST | /api/v1/payments | Registrar pago |
+| Payments | GET | /api/v1/payments | Obtener pagos |
 | Payments | GET | /api/v1/payments/{id} | Obtener pago |
+| Payments | POST | /api/v1/payments/{id}/state | Actualizar estado del pago |
 
 Todos los endpoints siguen principios REST y devuelven JSON.
 
 ---
-
-## Representación de Recursos (JSON)
-
-Ejemplo Ride:
-```json
-{
-  "rideId": "ride-12345",
-  "riderId": "user-101",
-  "driverId": "driver-55",
-  "pickupLocation": "Main St 123",
-  "dropoffLocation": "Airport",
-  "status": "IN_PROGRESS",
-  "fare": 25.50
-}
-```
-
-Ejemplo error:
-```json
-{
-  "error": "INVALID_REQUEST",
-  "message": "Missing riderId field"
-}
-```
----
-
 ## Arquitectura
 
 - API Gateway: entrada REST
-- AWS Lambda (Python 3.9): lógica de negocio
+- AWS Lambda (Python 3.13): lógica de negocio
 - EC2: motor de matching
 - RABBITMQ: mensajería asíncrona
 
----
+La aplicacion estara distribuida en 4 microservicios y un servicio de mensajeria RabbitMQ servido en un contenedor docker y al igual que un servicio adicional
+llamado matching worker que se encargara de asignar viajes solicitados a conductores disponibles.
 
-## Microservicios
+![architecture.png](img/architecture.png)
+
 
 | Servicio | Responsabilidad | Componentes AWS |
 |---|---:|---|
@@ -88,6 +75,17 @@ Ejemplo error:
 | Payment Service | Facturación y pagos | Lambda + API Gateway |
 | Matching Engine | Asignación de drivers | EC2 |
 
+## Representación de Recursos (JSON)
+
+Ejemplo Ride:
+```json
+{
+    "riderId":"ussdfer-1234",
+    "pickup":{"lat":4.6,"lon":-74.07},
+    "dropoff":{"lat":4.7,"lon":-74.10},
+    "paymentMethodId":"card-1"
+  }
+```
 ---
 
 ## Desarrollo local
@@ -165,13 +163,94 @@ curl -s -X POST http://localhost:8003/api/v1/rides \
 docker compose logs -f matching_worker
 ```
 
-Notas:
-- Si ejecutas APIs localmente y el worker en Docker, configura `DRIVERS_URL` y `RIDES_URL` del worker para usar `host.docker.internal` (o publica los puertos de las APIs) para que el worker pueda invocarlas.
-
 ## Depliegue en Lambda AWS
 
-- Empaquetar el contenido de los servicios junto con el código del servicio.
-- Usar Mangum como handler en la aplicación para recibir eventos de API Gateway.
+### Empaquetando servicios en .zip
+
+- Para cargar nuestros microservicios en lambda debemos empaquetarlos en un archivo .zip junto a las librerias python a utilizar para ello podemos usar estos comandos:
+```bash
+
+# Nos ubicamos en la carpeta del servicio
+../../drivers
+# Creamos directorio temporal
+mkdir -p lambda-package
+# levantamos una imagen dockker  donde se instalaran las dependencias
+docker run --rm --platform linux/amd64 \
+  -v "$PWD":/var/task \
+  -w /var/task \
+  python:3.11-slim \
+  pip install -r requirements.txt -t lambda-package --no-cache-dir
+
+#copiamos el contendo de la carpeta app en el directorio temporal
+cp -r app lambda-package/
+
+# empaquetamos en un .zip
+cd lambda-package
+zip -r9 ../api-service.zip .
+cd ..
+rm -rf lambda-package
+```
+### Cargar zip a aws Lambda
+1. creamos 4 funciones lambda de la siguiente manera
+![lambda.png](img/lambda.png)
+2. Seleccionamos cargar archivo .zip
+![lambda.png](img/lambda.png)
+3. Generamos la lambda y en la sección de código seleccionamos configurar tiempo de ejecución y editamos
+![lambda.png](img/lambda.png)
+4. Cambaimos datos por app.main.handler
+### Api Gateway
+1. Nos dirigimos a api gateway y generamos nuevo API de REST
+![lambda.png](img/lambda.png)
+2. Creamos los 4 recursos siguiendo el nombre de ruta puesto en los archivos main.py de cada servicio
+![lambda.png](img/lambda.png)
+3. Por cada endpoint creamos tipode método ANY, Funcion Lambda, seleccionamos integracion proxy de lambda, seleccionamos la lambda correspondiente al servicio y le damos en guardar.
+![lambda.png](img/lambda.png)
+4. Después para cada Recurso creamos un recurso de tipo proxy con la misma configuracion anterior.
+![lambda.png](img/lambda.png)
+5. Finalmente, debemos tener los servicios similar a lo siguiente:
+![lambda.png](img/lambda.png)
+6. Damos click en implementar API y generamos un nuevo stage lo llamamos dev y guardamos
+![lambda.png](img/lambda.png)
+### EC2
+1. Ingresamos a una EC2 previamente creada
+![lambda.png](img/lambda.png)
+2. Luego, vamos a necesitar desargar las imagenes docker. Para ello, ejecutamos los siguientes comandos:
+RabbitMQ:
+```bash
+docker run -d --name rabbitmq \
+  --network app_network \
+  -p 5672:5672 -p 15672:15672 \
+  -e RABBITMQ_DEFAULT_USER=guest \
+  -e RABBITMQ_DEFAULT_PASS=guest \
+  rabbitmq:3-management
+```
+matching_worker:
+- Es Indispensable  tener los servicios de conductores y viajes previamente creados e integrados con api gateway.
+- Ingresamos las url de los servicios y mantenemos el resto de variables igual:
+```bash
+docker run -d --name matching_worker \
+  --network app_network \
+  -e PYTHONUNBUFFERED=1 \
+  -e PYTHONPATH=/workspace \
+  -e RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/ \
+  -e DRIVERS_URL=https://swgyv053e7.execute-api.us-east-1.amazonaws.com/dev/drivers-api\
+  -e RIDES_URL=https://swgyv053e7.execute-api.us-east-1.amazonaws.com/dev/rides-api\
+  juancamiloposso/matching_worker:latest
+```
+### Configurando reglas seguridad y VPC
+1. nos digirimos al servicio VPC de AWS, y vamos a la seccion security groups
+![lambda.png](img/lambda.png)
+2. creamos uno nuevo le damos un nombre, seleccionamos VPC defecto  y aceptamos todo el trafico entrante y le damos en crear
+![lambda.png](img/lambda.png)
+3. Nos dirigimos a la lambda de rides service y en el apartado configuración seleccionamos VPC y damos en crear nuevo.
+![lambda.png](img/lambda.png)
+4. elegimos la VPC por defecto , seleccionamos 2 subnets disponibles y el grupo de seguridad previamente creado
+![lambda.png](img/lambda.png)
+5. guardamos y nos dirigimos al EC2 e ingresamos al apartado security
+![lambda.png](img/lambda.png)
+6. ajustamos las Inbopund rules agregando la nueva regla que nos permitirá aceptar trafico a través del puerto 5672 que se usará para RabbitMQ
+
+### Pruebas Endpoints
 
 ### Diagramas y OpenAPI
 
