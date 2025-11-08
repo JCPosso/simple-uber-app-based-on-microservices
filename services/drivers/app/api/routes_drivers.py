@@ -4,8 +4,21 @@ from uuid import uuid4
 from typing import Optional
 from ..models.driver import DriverCreate, Location
 
-router = APIRouter(prefix="/api/v1/drivers", tags=["drivers"])
+router = APIRouter(prefix="/drivers", tags=["drivers"])
 db = {}
+
+@router.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+@router.get("/available")
+async def get_available_driver():
+    """Return the first driver with status AVAILABLE or 204 if none."""
+    for d in db.values():
+        if d.get("status") == "AVAILABLE":
+            return d
+    # No driver available
+    raise HTTPException(status_code=204, detail="no drivers available")
 
 @router.get("")
 async def list_drivers(status: Optional[str] = None):
@@ -25,15 +38,6 @@ async def create_driver(d: DriverCreate):
     db[driver_id] = driver
     return driver
 
-
-@router.get("/available")
-async def get_available_driver():
-    """Return the first driver with status AVAILABLE or 204 if none."""
-    for d in db.values():
-        if d.get("status") == "AVAILABLE":
-            return d
-    # No driver available
-    raise HTTPException(status_code=204, detail="no drivers available")
 
 @router.get("/{driver_id}")
 async def get_driver(driver_id: str):
@@ -61,7 +65,3 @@ async def update_location(driver_id: str, loc: Location):
         raise HTTPException(status_code=404, detail="driver not found")
     driver["location"] = loc.dict()
     return {"ok": True}
-
-@router.get("/health")
-def health_check():
-    return {"status": "ok"}
