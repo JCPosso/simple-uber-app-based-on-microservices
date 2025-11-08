@@ -35,7 +35,7 @@ async def handle_message(message: aio_pika.IncomingMessage):
             async with httpx.AsyncClient(timeout=10.0) as client:
                 # ask drivers service for available driver
                 try:
-                    r = await client.get(f"{DRIVERS_URL}/api/v1/drivers/available")
+                    r = await client.get(f"{DRIVERS_URL}/v1/drivers/available")
                 except Exception:
                     logger.exception('failed to contact drivers service')
                     raise
@@ -48,12 +48,12 @@ async def handle_message(message: aio_pika.IncomingMessage):
                         return
 
                     # assign driver to ride
-                    assign_resp = await client.patch(f"{RIDES_URL}/api/v1/rides/{ride_id}/assign", json={"driverId": driver_id})
+                    assign_resp = await client.patch(f"{RIDES_URL}/v1/rides/{ride_id}/assign", json={"driverId": driver_id})
                     if assign_resp.status_code in (200, 201):
                         logger.info('Assigned driver %s to ride %s', driver_id, ride_id)
                         # mark driver as ON_TRIP
                         try:
-                            await client.patch(f"{DRIVERS_URL}/api/v1/drivers/{driver_id}/status", json={"status": "ON_TRIP"})
+                            await client.patch(f"{DRIVERS_URL}/v1/drivers/{driver_id}/status", json={"status": "ON_TRIP"})
                         except Exception:
                             logger.exception('failed to update driver status')
                     else:
