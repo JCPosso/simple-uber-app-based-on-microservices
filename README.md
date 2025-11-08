@@ -192,25 +192,25 @@ rm -rf lambda-package
 ```
 ### Cargar zip a aws Lambda
 1. creamos 4 funciones lambda de la siguiente manera
-![lambda.png](img/lambda.png)
+![create_lambda.png](img/create_lambda.png)
 2. Seleccionamos cargar archivo .zip
-![lambda.png](img/lambda.png)
+![ip_file_lambda.png](img/zip_file_lambda.png)
 3. Generamos la lambda y en la sección de código seleccionamos configurar tiempo de ejecución y editamos
-![lambda.png](img/lambda.png)
+![runtime_settings_preview.png](img/runtime_settings_preview.png)
 4. Cambaimos datos por app.main.handler
+![edit_runtime_settings.png](img/edit_runtime_settings.png)
 ### Api Gateway
 1. Nos dirigimos a api gateway y generamos nuevo API de REST
-![lambda.png](img/lambda.png)
+![create_rest_api.png](img/create_rest_api.png)
 2. Creamos los 4 recursos siguiendo el nombre de ruta puesto en los archivos main.py de cada servicio
-![lambda.png](img/lambda.png)
-3. Por cada endpoint creamos tipode método ANY, Funcion Lambda, seleccionamos integracion proxy de lambda, seleccionamos la lambda correspondiente al servicio y le damos en guardar.
-![lambda.png](img/lambda.png)
+- Por cada endpoint creamos tipode método ANY, Funcion Lambda, seleccionamos integracion proxy de lambda, seleccionamos la lambda correspondiente al servicio y le damos en guardar.
+![create_proxy_resource.png](img/create_proxy_resource.png)
 4. Después para cada Recurso creamos un recurso de tipo proxy con la misma configuracion anterior.
-![lambda.png](img/lambda.png)
+![create_rest_api.png](img/create_rest_api.png)
 5. Finalmente, debemos tener los servicios similar a lo siguiente:
-![lambda.png](img/lambda.png)
+![preview_all_resources.png](img/preview_all_resources.png)
 6. Damos click en implementar API y generamos un nuevo stage lo llamamos dev y guardamos
-![lambda.png](img/lambda.png)
+![deploy_api.png](img/deploy_api.png)
 ### EC2
 1. Ingresamos a una EC2 previamente creada
 ![lambda.png](img/lambda.png)
@@ -239,16 +239,17 @@ docker run -d --name matching_worker \
 ```
 ### Configurando reglas seguridad y VPC
 1. nos digirimos al servicio VPC de AWS, y vamos a la seccion security groups
-![lambda.png](img/lambda.png)
+![view_security_groups.png](img/view_security_groups.png)
 2. creamos uno nuevo le damos un nombre, seleccionamos VPC defecto  y aceptamos todo el trafico entrante y le damos en crear
-![lambda.png](img/lambda.png)
+![create_security_group.png](img/create_security_group.png)
 3. Nos dirigimos a la lambda de rides service y en el apartado configuración seleccionamos VPC y damos en crear nuevo.
-![lambda.png](img/lambda.png)
+![lambda_create_vpc.png](img/lambda_create_vpc.png)
 4. elegimos la VPC por defecto , seleccionamos 2 subnets disponibles y el grupo de seguridad previamente creado
-![lambda.png](img/lambda.png)
+![edit_vpc.png](img/edit_vpc.png)
 5. guardamos y nos dirigimos al EC2 e ingresamos al apartado security
-![lambda.png](img/lambda.png)
-6. ajustamos las Inbopund rules agregando la nueva regla que nos permitirá aceptar trafico a través del puerto 5672 que se usará para RabbitMQ
+![ec2_security_section.png](img/ec2_security_section.png)
+6. ajustamos las Inbound rules agregando la nueva regla que nos permitirá aceptar trafico a través del puerto 5672 que se usará para RabbitMQ
+![inbound_rules.png](img/inbound_rules.png)
 
 ### Pruebas Endpoints
 
