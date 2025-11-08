@@ -204,9 +204,9 @@ rm -rf lambda-package
 ![create_rest_api.png](img/create_rest_api.png)
 2. Creamos los 4 recursos siguiendo el nombre de ruta puesto en los archivos main.py de cada servicio
 - Por cada endpoint creamos tipode método ANY, Funcion Lambda, seleccionamos integracion proxy de lambda, seleccionamos la lambda correspondiente al servicio y le damos en guardar.
-![create_proxy_resource.png](img/create_proxy_resource.png)
-4. Después para cada Recurso creamos un recurso de tipo proxy con la misma configuracion anterior.
 ![create_rest_api.png](img/create_rest_api.png)
+4. Después para cada Recurso creamos un recurso de tipo proxy con la misma configuracion anterior.
+![create_proxy_resource.png](img/create_proxy_resource.png)
 5. Finalmente, debemos tener los servicios similar a lo siguiente:
 ![preview_all_resources.png](img/preview_all_resources.png)
 6. Damos click en implementar API y generamos un nuevo stage lo llamamos dev y guardamos
